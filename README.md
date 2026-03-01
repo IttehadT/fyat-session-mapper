@@ -168,4 +168,4 @@ Just open `fyat_app.html` directly in a browser. Note that the JSON fetch requir
 
 ## License
 
-MIT — do whatever you want with it.
+Licensed under the Apache License, Version 2.0.
