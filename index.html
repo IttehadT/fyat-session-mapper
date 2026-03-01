@@ -158,13 +158,13 @@
                     
                     for (let i = 1; i < lines.length; i++) {
                         const row = parseCSVRow(lines[i]);
-                        if (row.length >= 4) {
-                            // Adjust indexes based on your exact Form layout
-                            const name = row[1] ? row[1].trim() : "Unknown";
-                            const studentId = row[2] ? row[2].trim() : "Unknown";
+                        if (row.length >= 5) {
+                            
+                            const name = row[2] ? row[2].trim() : "Unknown";
+                            const studentId = row[3] ? row[3].trim() : "Unknown";
                             const courseString = row[row.length - 1]; 
                             
-                            const regex = /([A-Za-z]{3,4})[^\\w]*(\\d{3})[^\\w]*(\\d{1,2})/g;
+                            const regex = /([A-Za-z]{3,4})[^\w]*(\d{3})[^\w]*(\d{1,2})/g;
                             let matches;
                             const courses = [];
                             while ((matches = regex.exec(courseString)) !== null) {
@@ -335,3 +335,4 @@
 </body>
 
 </html>
+
