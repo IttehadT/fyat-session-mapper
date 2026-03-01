@@ -9,6 +9,47 @@
 <style>
   /* ── Config ── */
   :root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface2: #eef0f5;
+  --border: #d8dce8;
+  --accent: #3b6fd4;
+  --accent2: #c03558;
+  --text: #1c2030;
+  --muted: #4a5270;
+  --success: #1a9e6a;
+  --warn: #b87000;
+  --code-bg: #e8eaf2;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Light theme overrides ── */
+  body.light {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #eef0f5;
+    --border: #dde0ea;
+    --accent: #3b6fd4;
+    --accent2: #d04060;
+    --text: #1a1e2e;
+    --muted: #6b7a99;
+    --success: #1a9e6a;
+    --warn: #c47c00;
+    --code-bg: #e8eaf2;
+  }
+  body.light .code-block { color: #2a3050; }
+  body.light header {
+    background: linear-gradient(180deg, rgba(59,111,212,0.06) 0%, transparent 100%);
+  }
+  body.light header h1 {
+    background: linear-gradient(135deg, #1a1e2e 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  /* ── Dark theme ── */
+  body.dark {
     --bg: #0d0f14;
     --surface: #13161d;
     --surface2: #1c2030;
@@ -20,9 +61,29 @@
     --success: #3ecf8e;
     --warn: #f0a500;
     --code-bg: #090b10;
-    --font-display: 'Syne', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
   }
+
+  /* Light-specific overrides for elements that hardcode colors */
+  body:not(.dark) .code-block { color: #2c3a6e; }
+  body:not(.dark) .kw  { color: #7c3aed; }
+  body:not(.dark) .fn  { color: #1d4ed8; }
+  body:not(.dark) .str { color: #166534; }
+  body:not(.dark) .cm  { color: #6b7a99; }
+  body:not(.dark) header {
+    background: linear-gradient(180deg, rgba(59,111,212,0.05) 0%, transparent 100%);
+  }
+  body:not(.dark) header h1 {
+    background: linear-gradient(135deg, #1c2030 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  body:not(.dark) .routine-table th { background: #e4e7f0; color: #3a4260; }
+  body:not(.dark) .time-cell { background: #eef0f5 !important; color: #4a5270 !important; }
+  body:not(.dark) .my-slot   { background: #3b6fd4 !important; color: #ffffff !important; }
+  body:not(.dark) .modal-box { box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+  body:not(.dark) .step      { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  body:not(.dark) body::before { opacity: 0.15; }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   
   body {
@@ -54,7 +115,7 @@
     background: linear-gradient(180deg, rgba(91,141,238,0.06) 0%, transparent 100%);
   }
   .header-eyebrow {
-    font-size: 11px;
+    font-size: 14px;
     letter-spacing: 3px;
     color: var(--accent);
     text-transform: uppercase;
@@ -88,7 +149,7 @@
     color: var(--success);
     border-radius: 20px;
     padding: 5px 14px;
-    font-size: 12px;
+    font-size: 14px;
     margin-top: 20px;
     font-weight: 600;
   }
@@ -184,7 +245,7 @@
     border-radius: 0 8px 8px 0;
     padding: 14px 18px;
     font-size: 13px;
-    color: #a0aec0;
+    color: #496488;
     line-height: 1.7;
     margin-bottom: 20px;
   }
@@ -200,7 +261,7 @@
     gap: 14px;
     padding: 10px 0;
     font-size: 13px;
-    color: #a0aec0;
+    color: #496488;
     border-bottom: 1px solid rgba(255,255,255,0.04);
     line-height: 1.6;
   }
@@ -493,7 +554,7 @@
 
 <!-- ── Header ── -->
 <header>
-  <div class="header-eyebrow">BRACU · FYAT Tool</div>
+  <div class="header-eyebrow">BRACU / FYAT Tool</div>
   <h1>Routine Mapper</h1>
   <p>Visualize your free time slots against your FYAT members' schedules — in four simple steps.</p>
   <div class="status-badge"><div class="dot"></div> Schedule data loaded live</div>
@@ -990,6 +1051,46 @@ function showError(msg) {
   el.textContent = '⚠ ' + msg;
   el.style.display = 'block';
   setTimeout(() => el.style.display = 'none', 5000);
+}
+</script>
+<!-- ── Theme Toggle ── -->
+<button id="themeToggle" onclick="toggleTheme()" title="Toggle theme">
+  <span id="themeIcon">☾</span>
+</button>
+
+<style>
+#themeToggle {
+  position: fixed;
+  bottom: 28px; right: 28px;
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+#themeToggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(1.08);
+}
+</style>
+
+<script>
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark');
+  document.getElementById('themeIcon').textContent = isDark ? '☀' : '☾';
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+// Restore saved preference — default is dark
+if (localStorage.getItem('theme') !== 'light') {
+  document.body.classList.add('dark');
+  document.getElementById('themeIcon').textContent = '☀';
 }
 </script>
 </body>
