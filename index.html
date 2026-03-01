@@ -1,330 +1,996 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FYAT Session Mapping</title>
-    <style>
-        body { font-family: 'Segoe UI', system-ui, sans-serif; padding: 30px; background-color: #f8fafc; color: #0f172a; max-width: 1200px; margin: 0 auto; }
-        h1 { text-align: center; color: #1e293b; font-weight: 800; }
-        .setup-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: 600; margin-bottom: 5px; color: #475569; }
-        input[type="text"], input[type="file"] { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
-        button { background-color: #4f46e5; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; width: 100%; font-size: 16px; }
-        button:hover { background-color: #4338ca; }
-        
-        .legend-container { text-align: center; margin-bottom: 25px; font-size: 14px; display: none; }
-        .legend-item { display: inline-block; padding: 6px 12px; margin: 0 8px; border-radius: 6px; font-weight: 600; }
-        .hint { color: #64748b; font-style: italic; margin-top: 8px; }
-        table { width: 100%; border-collapse: separate; border-spacing: 2px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: none; }
-        th, td { padding: 15px; text-align: center; width: 14.2%; border-radius: 4px; }
-        th { background-color: #1e293b; color: #f8fafc; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px; }
-        td { font-size: 15px; font-weight: 600; }
-        .time-label { background-color: #f1f5f9; color: #475569; font-weight: 700; font-size: 13px; }
-        .mentor-block { background-color: #4f46e5 !important; color: white !important; }
-        .clickable { cursor: pointer; transition: transform 0.1s, filter 0.2s; border: 1px solid rgba(0,0,0,0.05); }
-        .clickable:hover { transform: scale(0.98); filter: brightness(0.95); }
-        
-        .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(2px); }
-        .modal-content { background-color: #ffffff; margin: 5% auto; padding: 25px; width: 60%; border-radius: 12px; max-height: 80vh; overflow-y: auto; }
-        .close { color: #94a3b8; float: right; font-size: 24px; font-weight: bold; cursor: pointer; }
-        .details-table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; display: table;}
-        .details-table th, .details-table td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; font-size: 14px; font-weight: 500; }
-        .details-table th { background-color: #f8fafc; color: #475569; }
-        .status-free { color: #059669; }
-        .status-busy { color: #dc2626; }
-        .divider hr { border: 0; border-top: 2px dashed #cbd5e1; margin: 10px 0; }
-        #loader { text-align: center; color: #4f46e5; font-weight: bold; display: none; margin-bottom: 15px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FYAT Routine Mapper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ── Config ── */
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161d;
+    --surface2: #1c2030;
+    --border: #252a38;
+    --accent: #5b8dee;
+    --accent2: #e05b7f;
+    --text: #e2e8f0;
+    --muted: #6b7a99;
+    --success: #3ecf8e;
+    --warn: #f0a500;
+    --code-bg: #090b10;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* Header */
+  header {
+    position: relative;
+    z-index: 1;
+    padding: 60px 40px 40px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(91,141,238,0.06) 0%, transparent 100%);
+  }
+  .header-eyebrow {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 5vw, 58px);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+  header p {
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(62, 207, 142, 0.1);
+    border: 1px solid rgba(62, 207, 142, 0.3);
+    color: var(--success);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 12px;
+    margin-top: 20px;
+    font-weight: 600;
+  }
+  .dot { width: 7px; height: 7px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+  /* Main layout */
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 50px 24px 80px;
+  }
+
+  .steps-label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    font-weight: 600;
+  }
+
+  /* Accordion */
+  .step {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    background: var(--surface);
+    transition: border-color 0.2s;
+  }
+  .step.active { border-color: var(--accent); }
+  .step.completed { border-color: rgba(62,207,142,0.4); }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 20px 24px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .step-header:hover { background: rgba(255,255,255,0.02); }
+
+  .step-num {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: var(--muted);
+    flex-shrink: 0;
+    transition: all 0.2s;
+    font-family: var(--font-display);
+  }
+  .step.active .step-num { border-color: var(--accent); color: var(--accent); background: rgba(91,141,238,0.1); }
+  .step.completed .step-num { border-color: var(--success); color: var(--success); background: rgba(62,207,142,0.1); }
+  .step.completed .step-num::after { content: '✓'; }
+  .step.completed .step-num-inner { display: none; }
+
+  .step-info { flex: 1; }
+  .step-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .step-subtitle { font-size: 12px; color: var(--muted); }
+
+  .step-chevron {
+    color: var(--muted);
+    font-size: 18px;
+    transition: transform 0.25s;
+    flex-shrink: 0;
+  }
+  .step.active .step-chevron { transform: rotate(180deg); color: var(--accent); }
+
+  .step-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+  .step.active .step-body { max-height: 3000px; }
+  .step-inner { padding: 0 24px 28px; border-top: 1px solid var(--border); padding-top: 24px; }
+
+  /* Content blocks */
+  .info-box {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: #a0aec0;
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+  .info-box.warn { border-color: var(--warn); }
+  .info-box strong { color: var(--text); }
+
+  .instruction-list {
+    list-style: none;
+    margin-bottom: 20px;
+  }
+  .instruction-list li {
+    display: flex;
+    gap: 14px;
+    padding: 10px 0;
+    font-size: 13px;
+    color: #a0aec0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    line-height: 1.6;
+  }
+  .instruction-list li:last-child { border-bottom: none; }
+  .li-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(91,141,238,0.15);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* Code block */
+  .code-block-wrap { position: relative; margin-bottom: 20px; }
+  .code-block-label {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--code-bg);
+    border-radius: 8px 8px 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 0 0 8px 8px;
+    padding: 20px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: #c9d8f0;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.7;
+  }
+  .copy-btn {
+    background: rgba(91,141,238,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(91,141,238,0.3);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: rgba(91,141,238,0.25); }
+  .copy-btn.copied { background: rgba(62,207,142,0.15); color: var(--success); border-color: rgba(62,207,142,0.3); }
+
+  /* Form elements */
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  input[type="text"], textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 16px;
+  }
+  input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 36px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    background: var(--surface2);
+    margin-bottom: 20px;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(91,141,238,0.05); }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .upload-icon { font-size: 28px; margin-bottom: 10px; }
+  .upload-text { font-size: 13px; color: var(--muted); }
+  .upload-text strong { color: var(--accent); }
+  .file-selected { border-color: var(--success); background: rgba(62,207,142,0.05); }
+  .file-selected .upload-text { color: var(--success); }
+
+  /* Action button */
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #3a6fd8);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(91,141,238,0.35); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 600;
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Routine output */
+  #routineSection { display: none; }
+  .routine-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .routine-header h2 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 800;
+  }
+
+  .legend-strip {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 20px; font-size: 12px;
+  }
+  .legend-pill {
+    padding: 4px 12px; border-radius: 20px;
+    font-weight: 600; color: white; font-size: 11px;
+  }
+
+  /* Routine table */
+  .table-wrap { overflow-x: auto; border-radius: 10px; }
+  .routine-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 3px;
+    min-width: 680px;
+  }
+  .routine-table th {
+    background: #1a1e2e;
+    color: #8899bb;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 12px 8px;
+    border-radius: 6px;
+    font-family: var(--font-display);
+  }
+  .routine-table td {
+    padding: 10px 8px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+    line-height: 1.5;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .routine-table td:hover { filter: brightness(1.1); transform: scale(0.98); }
+  .time-cell {
+    background: #13161d !important;
+    color: #6b7a99 !important;
+    font-size: 11px !important;
+    cursor: default !important;
+    font-weight: 700 !important;
+  }
+  .time-cell:hover { filter: none !important; transform: none !important; }
+  .my-slot { background: #3b4fd4 !important; color: white !important; }
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(13,15,20,0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999;
+    display: none;
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--muted); font-size: 13px; margin-top: 16px; }
+  .loading-inner { text-align: center; }
+
+  /* Modal */
+  .modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal.show { display: flex; }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    width: 90%;
+    max-width: 560px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 18px;
+    background: none; border: none;
+    color: var(--muted); font-size: 22px; cursor: pointer;
+  }
+  .modal-title { font-family: var(--font-display); font-size: 17px; font-weight: 700; margin-bottom: 18px; }
+  .modal-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .modal-table th { color: var(--muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+  .modal-table td { padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .status-free { color: var(--success); font-weight: 700; }
+  .status-busy { color: var(--accent2); font-weight: 700; }
+  .divider-row td { padding: 4px 0; }
+  .divider-hr { border: none; border-top: 1px dashed var(--border); }
+
+  /* Error */
+  .error-msg { color: var(--accent2); font-size: 13px; margin-top: 10px; display: none; }
+
+  /* Syntax highlight helpers */
+  .kw { color: #c792ea; }
+  .fn { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm { color: #546e7a; font-style: italic; }
+
+  @media (max-width: 600px) {
+    header { padding: 40px 20px 30px; }
+    main { padding: 30px 16px 60px; }
+    .step-inner { padding: 16px 16px 20px; }
+    .step-header { padding: 16px; gap: 14px; }
+  }
+</style>
 </head>
 <body>
 
-    <h1>FYAT Session Mapping Routine</h1>
+<!-- ── Loading overlay ── -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-inner">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Processing...</div>
+  </div>
+</div>
 
-    <div class="setup-card">
-        <h3>Mentor Setup</h3>
-        <div class="form-group">
-            <label>Mentor Name</label>
-            <input type="text" id="mentorName" placeholder="e.g., Tausif">
-        </div>
-        <div class="form-group">
-            <label>Your Enrolled Courses</label>
-            <input type="text" id="mentorCourses" placeholder="e.g., CSE340-21, CSE321-20">
-        </div>
-        <div class="form-group">
-            <label>Upload Mentees CSV File</label>
-            <input type="file" id="csvFile" accept=".csv">
-        </div>
-        <button onclick="generateRoutine()">Generate Routine</button>
-        <div id="loader">Fetching university data and processing...</div>
+<!-- ── Modal ── -->
+<div class="modal" id="detailModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-title" id="modalTitle">Slot Details</div>
+    <table class="modal-table">
+      <thead><tr><th>ID</th><th>Name</th><th>Status</th></tr></thead>
+      <tbody id="modalBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Header ── -->
+<header>
+  <div class="header-eyebrow">BRACU · FYAT Tool</div>
+  <h1>Routine Mapper</h1>
+  <p>Visualize your free time slots against your FYAT members' schedules — in four simple steps.</p>
+  <div class="status-badge"><div class="dot"></div> Schedule data loaded live</div>
+</header>
+
+<!-- ── Main ── -->
+<main>
+  <div class="steps-label">// four steps to your map</div>
+
+  <!-- ════════ STEP 1 ════════ -->
+  <div class="step active" id="step1">
+    <div class="step-header" onclick="toggleStep(1)">
+      <div class="step-num"><span class="step-num-inner">01</span></div>
+      <div class="step-info">
+        <div class="step-title">Create the Google Form</div>
+        <div class="step-subtitle">Run an Apps Script to generate the response form in your Drive</div>
+      </div>
+      <div class="step-chevron">▾</div>
     </div>
+    <div class="step-body">
+      <div class="step-inner">
+        <div class="info-box">
+          You need to collect course registrations from your FYAT members. Run this one-time script to auto-create a form in your Google Drive — no manual setup needed.
+        </div>
 
-    <div class="legend-container" id="legend">
-        <span class="legend-item mentor-block" id="legendMentor">Mentor (1/1)</span>
-        <span class="legend-item" style="background-color: #10b981; color: white;">All Free</span>
-        <span class="legend-item" style="background-color: #ef4444; color: white;">None Free</span>
-        <div class="hint">Numbers indicate (Available / Total). Click any cell to view detailed student availability.</div>
-    </div>
+        <ul class="instruction-list">
+          <li><div class="li-num">1</div><span>Go to <strong>script.google.com</strong> and click <strong>New Project</strong></span></li>
+          <li><div class="li-num">2</div><span>Delete all existing code in the editor</span></li>
+          <li><div class="li-num">3</div><span>Paste the code below, then press <strong>Run (▶)</strong></span></li>
+          <li><div class="li-num">4</div><span>Grant permissions when prompted — Google will ask to access your Drive</span></li>
+          <li><div class="li-num">5</div><span>A new form titled <strong>"FYAT Session Availability"</strong> will appear in your Google Drive</span></li>
+          <li><div class="li-num">6</div><span>Share the form link with all FYAT members and ask them to fill it out</span></li>
+        </ul>
 
-    <table id="routineTable"></table>
+        <div class="code-block-wrap">
+          <div class="code-block-label">
+            <span>apps-script.gs</span>
+            <button class="copy-btn" onclick="copyCode('appScript', this)">Copy</button>
+          </div>
+          <div class="code-block" id="appScript"><span class="kw">function</span> <span class="fn">createFYATForm</span>() {
+  <span class="kw">var</span> form = <span class="fn">FormApp.create</span>(<span class="str">'FYAT Session Availability'</span>);
 
-    <div id="myModal" class="modal">
-      <div class="modal-content">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <h3 id="modalTitle" style="color: #1e293b; margin-top: 0;">Slot Details</h3>
-        <table class="details-table" id="detailsTable">
-            <thead>
-                <tr>
-                    <th style="width: 25%;">Student ID</th>
-                    <th style="width: 50%;">Name</th>
-                    <th style="width: 25%;">Status</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+  form.<span class="fn">setCollectEmail</span>(<span class="kw">true</span>);
+
+  form.<span class="fn">addTextItem</span>()
+      .<span class="fn">setTitle</span>(<span class="str">'Name'</span>)
+      .<span class="fn">setRequired</span>(<span class="kw">true</span>);
+
+  form.<span class="fn">addTextItem</span>()
+      .<span class="fn">setTitle</span>(<span class="str">'Student ID'</span>)
+      .<span class="fn">setRequired</span>(<span class="kw">true</span>);
+
+  form.<span class="fn">addParagraphTextItem</span>()
+      .<span class="fn">setTitle</span>(<span class="str">'Registered Courses. Format: [Course1-Section1, Course2-Section2,...]'</span>)
+      .<span class="fn">setHelpText</span>(<span class="str">'Enter your courses like: CSE110-02, MAT110-05, ENG101-11. '</span> +
+                  <span class="str">'Use the exact course code and section number from your registered routine.'</span>)
+      .<span class="fn">setRequired</span>(<span class="kw">true</span>);
+
+  <span class="kw">var</span> url = form.<span class="fn">getPublishedUrl</span>();
+  <span class="fn">Logger.log</span>(<span class="str">'Form created: '</span> + url);
+  <span class="fn">SpreadsheetApp.getUi</span>();
+}</div>
+        </div>
+
+        <button class="btn-primary" onclick="goToStep(2)">Done — I've shared the form ›</button>
       </div>
     </div>
+  </div>
 
-    <script>
-        // Replace this URL with your raw GitHub user content URL for connect.json
-        const JSON_API_URL = 'https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/connect.json';
+  <!-- ════════ STEP 2 ════════ -->
+  <div class="step" id="step2">
+    <div class="step-header" onclick="toggleStep(2)">
+      <div class="step-num"><span class="step-num-inner">02</span></div>
+      <div class="step-info">
+        <div class="step-title">Download Responses as CSV</div>
+        <div class="step-subtitle">Export form responses from Google Sheets</div>
+      </div>
+      <div class="step-chevron">▾</div>
+    </div>
+    <div class="step-body">
+      <div class="step-inner">
+        <div class="info-box warn">
+          <strong>Wait until all members have submitted.</strong> You can re-run anytime with an updated CSV — just go through Steps 3–4 again.
+        </div>
 
-        let studentNames = {};
+        <ul class="instruction-list">
+          <li><div class="li-num">1</div><span>Open your form in Google Forms and click the <strong>Responses</strong> tab at the top</span></li>
+          <li><div class="li-num">2</div><span>Click the <strong>Google Sheets icon</strong> (spreadsheet icon) to open responses in Sheets. If not linked, click the link icon to create one</span></li>
+          <li><div class="li-num">3</div><span>In the Sheets file, go to <strong>File → Download → Comma Separated Values (.csv)</strong></span></li>
+          <li><div class="li-num">4</div><span>Save the CSV somewhere easy to find — you'll upload it in the next step</span></li>
+        </ul>
 
-        function checkOverlap(slotStart, slotEnd, sessionStart, sessionEnd) {
-            return (slotStart < sessionEnd) && (slotEnd > sessionStart);
+        <div class="info-box">
+          The CSV should have columns in this order: <strong>Timestamp, Email, Name, Student ID, Courses</strong>. This is the default Google Forms export format — no editing needed.
+        </div>
+
+        <button class="btn-primary" onclick="goToStep(3)">Got the CSV — Next ›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ STEP 3 ════════ -->
+  <div class="step" id="step3">
+    <div class="step-header" onclick="toggleStep(3)">
+      <div class="step-num"><span class="step-num-inner">03</span></div>
+      <div class="step-info">
+        <div class="step-title">Enter Your Details & Upload CSV</div>
+        <div class="step-subtitle">Your courses + the members' response file</div>
+      </div>
+      <div class="step-chevron">▾</div>
+    </div>
+    <div class="step-body">
+      <div class="step-inner">
+        <label for="myName">Your Name</label>
+        <input type="text" id="myName" placeholder="e.g. Tausif">
+
+        <label for="myCourses">Your Registered Courses</label>
+        <textarea id="myCourses" placeholder="CSE340-21, CSE321-20, CSE440-04, CSE370-13"></textarea>
+
+        <label>Upload Responses CSV</label>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="csvFile" accept=".csv" onchange="handleFile(this)">
+          <div class="upload-icon">📂</div>
+          <div class="upload-text" id="uploadText">
+            <strong>Click to browse</strong> or drag and drop your CSV file here
+          </div>
+        </div>
+
+        <div class="error-msg" id="errorMsg">⚠ Something went wrong. Check your inputs and try again.</div>
+
+        <button class="btn-primary" id="generateBtn" onclick="generateRoutine()">
+          <span>Generate My Routine Map</span>
+          <span>→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ STEP 4 ════════ -->
+  <div class="step" id="step4">
+    <div class="step-header" onclick="toggleStep(4)">
+      <div class="step-num"><span class="step-num-inner">04</span></div>
+      <div class="step-info">
+        <div class="step-title">Your Routine Map</div>
+        <div class="step-subtitle">Click any cell to see individual availability</div>
+      </div>
+      <div class="step-chevron">▾</div>
+    </div>
+    <div class="step-body">
+      <div class="step-inner">
+        <div id="routineSection">
+          <div class="routine-header">
+            <h2 id="routineTitle">Routine Map</h2>
+            <button class="btn-outline" onclick="goToStep(3)">↩ Re-upload</button>
+          </div>
+
+          <div class="legend-strip" id="legendStrip"></div>
+
+          <div class="table-wrap">
+            <table class="routine-table" id="routineTable"></table>
+          </div>
+        </div>
+        <div id="step4Placeholder" style="color: var(--muted); font-size: 13px; text-align: center; padding: 20px;">
+          Complete Step 3 to see your routine here.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════════
+//  CONFIG — replace JSON_URL with your hosted URL
+//  e.g. Supabase Storage public URL, GitHub raw, etc.
+// ══════════════════════════════════════════════
+const JSON_URL = 'https://mdubxhycazutgrvqwmrt.supabase.co/storage/v1/object/public/Connect%20JSON/connect.json';
+
+// ══════════════════════════════════════════════
+//  State
+// ══════════════════════════════════════════════
+let courseData = null;
+let studentData = [];
+let allStudentIds = new Set();
+
+const days = ["SATURDAY","SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY"];
+const slots = [
+  ["08:00:00","09:20:00","08:00–09:20 AM"],
+  ["09:30:00","10:50:00","09:30–10:50 AM"],
+  ["11:00:00","12:20:00","11:00 AM–12:20 PM"],
+  ["12:30:00","13:50:00","12:30–01:50 PM"],
+  ["14:00:00","15:20:00","02:00–03:20 PM"],
+  ["15:30:00","16:50:00","03:30–04:50 PM"],
+  ["17:00:00","18:20:00","05:00–06:20 PM"]
+];
+
+// ══════════════════════════════════════════════
+//  Accordion
+// ══════════════════════════════════════════════
+function toggleStep(n) {
+  const el = document.getElementById('step' + n);
+  const isActive = el.classList.contains('active');
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  if (!isActive) el.classList.add('active');
+}
+function goToStep(n) {
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active');
+    if (i + 1 < n) s.classList.add('completed');
+  });
+  const el = document.getElementById('step' + n);
+  el.classList.remove('completed');
+  el.classList.add('active');
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ══════════════════════════════════════════════
+//  Copy code
+// ══════════════════════════════════════════════
+function copyCode(id, btn) {
+  const el = document.getElementById(id);
+  const text = el.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ══════════════════════════════════════════════
+//  File upload
+// ══════════════════════════════════════════════
+function handleFile(input) {
+  if (input.files && input.files[0]) {
+    const zone = document.getElementById('uploadZone');
+    zone.classList.add('file-selected');
+    document.getElementById('uploadText').innerHTML = `✓ <strong>${input.files[0].name}</strong> selected`;
+  }
+}
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.csv')) {
+    document.getElementById('csvFile').files = e.dataTransfer.files;
+    handleFile(document.getElementById('csvFile'));
+  }
+});
+
+// ══════════════════════════════════════════════
+//  Time helpers
+// ══════════════════════════════════════════════
+function parseTime(t) {
+  if (!t) return 0;
+  const [h, m, s] = t.split(':').map(Number);
+  return h * 3600 + m * 60 + (s || 0);
+}
+function checkOverlap(slotStart, slotEnd, sessStart, sessEnd) {
+  return parseTime(slotStart) < parseTime(sessEnd) && parseTime(slotEnd) > parseTime(sessStart);
+}
+
+// ══════════════════════════════════════════════
+//  Build schedule map from JSON
+// ══════════════════════════════════════════════
+function buildScheduleMap(data) {
+  const map = {};
+  for (const item of data) {
+    let sec = String(item.sectionName || '');
+    const m = sec.match(/^([A-Za-z0-9]+)/);
+    if (m) sec = m[1];
+    const key = `${item.courseCode}-${sec}`.toUpperCase();
+    const schedules = [];
+    if (item.sectionSchedule?.classSchedules) schedules.push(...item.sectionSchedule.classSchedules);
+    if (item.labSchedules) schedules.push(...item.labSchedules);
+    map[key] = schedules;
+  }
+  return map;
+}
+
+// ══════════════════════════════════════════════
+//  Parse CSV
+// ══════════════════════════════════════════════
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const students = [];
+  const ids = new Set();
+  for (let i = 1; i < lines.length; i++) {
+    const row = lines[i].match(/(".*?"|[^,]+)(?=,|$)/g);
+    if (!row || row.length < 5) continue;
+    const clean = r => r.replace(/^"|"$/g, '').trim();
+    const email = clean(row[1]);
+    const name = clean(row[2]);
+    const id = clean(row[3]);
+    const courseStr = clean(row[4]);
+    const matches = [...courseStr.matchAll(/([A-Za-z]{2,4})[^\w]*(\d{3})[^\w]*(\d{1,2})/g)];
+    const courses = matches.map(m => `${m[1].toUpperCase()}${m[2]}-${m[3].padStart(2,'0')}`);
+    if (courses.length && id) {
+      students.push({ id, name, email, courses });
+      ids.add(id);
+    }
+  }
+  return { students, ids };
+}
+
+// ══════════════════════════════════════════════
+//  Main generate function
+// ══════════════════════════════════════════════
+async function generateRoutine() {
+  const name = document.getElementById('myName').value.trim() || 'Me';
+  const coursesRaw = document.getElementById('myCourses').value.trim();
+  const csvInput = document.getElementById('csvFile');
+
+  if (!coursesRaw) { showError('Please enter your courses.'); return; }
+  if (!csvInput.files.length) { showError('Please upload the CSV file.'); return; }
+
+  showLoading('Loading schedule data...');
+
+  // Load JSON if not cached
+  if (!courseData) {
+    try {
+      const res = await fetch(JSON_URL);
+      if (!res.ok) throw new Error('Failed to fetch schedule JSON');
+      courseData = await res.json();
+    } catch (e) {
+      // Fallback: try local file (for testing) — remove in production
+      hideLoading();
+      showError(`Could not load schedule data. Check that JSON_URL is set correctly in the script. Error: ${e.message}`);
+      return;
+    }
+  }
+
+  document.getElementById('loadingText').textContent = 'Parsing responses...';
+
+  const scheduleMap = buildScheduleMap(courseData);
+  const myCourses = coursesRaw.split(',').map(c => c.trim().toUpperCase().replace(/\s/g,''));
+
+  // Parse CSV
+  const csvText = await csvInput.files[0].text();
+  const { students, ids } = parseCSV(csvText);
+  studentData = students;
+  allStudentIds = ids;
+  const total = students.length;
+
+  // Build grid
+  const nameMap = {};
+  students.forEach(s => nameMap[s.id] = s.name);
+
+  const grid = {};
+  days.forEach(d => {
+    grid[d] = {};
+    slots.forEach(([start]) => grid[d][start] = { busy: new Set(), mine: false });
+  });
+
+  // Mark my slots
+  myCourses.forEach(course => {
+    (scheduleMap[course] || []).forEach(sess => {
+      const d = sess.day, ss = sess.startTime, se = sess.endTime;
+      if (d && grid[d]) {
+        slots.forEach(([start, end]) => {
+          if (checkOverlap(start, end, ss, se)) grid[d][start].mine = true;
+        });
+      }
+    });
+  });
+
+  // Mark student slots
+  students.forEach(student => {
+    student.courses.forEach(course => {
+      (scheduleMap[course] || []).forEach(sess => {
+        const d = sess.day, ss = sess.startTime, se = sess.endTime;
+        if (d && grid[d]) {
+          slots.forEach(([start, end]) => {
+            if (checkOverlap(start, end, ss, se)) grid[d][start].busy.add(student.id);
+          });
         }
+      });
+    });
+  });
 
-        function parseCSVRow(str) {
-            let arr = [];
-            let quote = false;
-            let col = '';
-            for (let i = 0; i < str.length; i++) {
-                let cc = str[i], nc = str[i+1];
-                if (cc === '"' && quote && nc === '"') { col += '"'; i++; continue; }
-                if (cc === '"') { quote = !quote; continue; }
-                if (cc === ',' && !quote) { arr.push(col); col = ''; continue; }
-                col += cc;
-            }
-            arr.push(col);
-            return arr;
-        }
+  hideLoading();
+  renderRoutine(grid, total, name, nameMap);
+  goToStep(4);
+  document.getElementById('step4Placeholder').style.display = 'none';
+  document.getElementById('routineSection').style.display = 'block';
+}
 
-        async function generateRoutine() {
-            const mentorNameInput = document.getElementById('mentorName').value || 'Mentor';
-            document.getElementById('legendMentor').innerText = `${mentorNameInput} (1/1)`;
-            const mentorCoursesInput = document.getElementById('mentorCourses').value;
-            const csvInput = document.getElementById('csvFile').files[0];
+// ══════════════════════════════════════════════
+//  Render routine table
+// ══════════════════════════════════════════════
+function renderRoutine(grid, total, myName, nameMap) {
+  document.getElementById('routineTitle').textContent = `${myName}'s Routine Map`;
 
-            if (!csvInput) { alert("Please upload a CSV file."); return; }
+  // Legend
+  const legend = document.getElementById('legendStrip');
+  legend.innerHTML = `
+    <span class="legend-pill" style="background:#3b4fd4">${myName}</span>
+    <span class="legend-pill" style="background:#10b981">All Free</span>
+    <span class="legend-pill" style="background:#ef4444">None Free</span>
+    <span style="color:var(--muted);font-size:11px;align-self:center;">Numbers = available/total · Click cell for details</span>
+  `;
 
-            document.getElementById('loader').style.display = 'block';
+  const table = document.getElementById('routineTable');
+  let html = '<tr><th>Time</th>';
+  days.forEach(d => html += `<th>${d.slice(0,3)}<br><span style="font-size:9px;opacity:0.6">${d.slice(3)}</span></th>`);
+  html += '</tr>';
 
-            try {
-                const response = await fetch(JSON_API_URL);
-                if (!response.ok) throw new Error("Could not fetch connect.json");
-                const courseData = await response.json();
+  slots.forEach(([start, , label]) => {
+    html += `<tr><td class="time-cell">${label}</td>`;
+    days.forEach(day => {
+      const cell = grid[day][start];
+      const busyList = [...cell.busy];
+      const freeList = [...allStudentIds].filter(id => !cell.busy.has(id));
+      const available = total - busyList.length;
+      const ratio = total > 0 ? available / total : 0;
+      const ratioText = `(${available}/${total})`;
+      const dataAttrs = `data-busy="${busyList.join(',')}" data-free="${freeList.join(',')}" data-title="${day} · ${label}"`;
 
-                const scheduleMap = {};
-                courseData.forEach(item => {
-                    let secName = String(item.sectionName || '');
-                    const match = secName.match(/^([A-Za-z0-9]+)/);
-                    if (match) secName = match[1];
-                    
-                    const courseKey = `${item.courseCode}-${secName}`.toUpperCase();
-                    let schedules = [];
-                    
-                    if (item.sectionSchedule && item.sectionSchedule.classSchedules) {
-                        schedules.push(...item.sectionSchedule.classSchedules);
-                    }
-                    if (item.labSchedules) {
-                        schedules.push(...item.labSchedules);
-                    }
-                    scheduleMap[courseKey] = schedules;
-                });
+      if (cell.mine) {
+        html += `<td class="my-slot" ${dataAttrs} onclick="showDetails(this)">${myName}<br><small style="opacity:0.8;font-size:10px">${ratioText}</small></td>`;
+      } else if (total === 0) {
+        html += `<td style="background:#1a1e2e;color:#4a5568" ${dataAttrs} onclick="showDetails(this)">—<br><small style="font-size:10px">${ratioText}</small></td>`;
+      } else {
+        const r = Math.round(239 - (239 - 16) * ratio);
+        const g = Math.round(68 + (185 - 68) * ratio);
+        const b = Math.round(68 + (80 - 68) * ratio);
+        const textCol = ratio < 0.35 || ratio > 0.65 ? '#fff' : '#111';
+        html += `<td style="background:rgb(${r},${g},${b});color:${textCol}" ${dataAttrs} onclick="showDetails(this)">${ratioText}</td>`;
+      }
+    });
+    html += '</tr>';
+  });
 
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const text = e.target.result;
-                    const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-                    const studentData = [];
-                    const allStudentIds = new Set();
-                    
-                    for (let i = 1; i < lines.length; i++) {
-                        const row = parseCSVRow(lines[i]);
-                        if (row.length >= 5) {
-                            const name = row[2].trim();
-                            const studentId = row[3].trim();
-                            const courseString = row[4]; 
-                            
-                            const regex = /([A-Za-z]{3,4})[^\w]*(\d{3})[^\w]*(\d{1,2})/g;
-                            let matches;
-                            const courses = [];
-                            while ((matches = regex.exec(courseString)) !== null) {
-                                courses.push(`${matches[1].toUpperCase()}${matches[2]}-${matches[3].padStart(2, '0')}`);
-                            }
-                            
-                            if (courses.length > 0) {
-                                studentData.push({ id: studentId, name: name, courses: courses });
-                                allStudentIds.add(studentId);
-                                studentNames[studentId] = name;
-                            }
-                        }
-                    }
+  table.innerHTML = html;
 
-                    const days = ["SATURDAY", "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY"];
-                    const slots = [
-                        ["08:00:00", "09:20:00", "08:00 AM - 09:20 AM"],
-                        ["09:30:00", "10:50:00", "09:30 AM - 10:50 AM"],
-                        ["11:00:00", "12:20:00", "11:00 AM - 12:20 PM"],
-                        ["12:30:00", "13:50:00", "12:30 PM - 01:50 PM"],
-                        ["14:00:00", "15:20:00", "02:00 PM - 03:20 PM"],
-                        ["15:30:00", "16:50:00", "03:30 PM - 04:50 PM"],
-                        ["17:00:00", "18:20:00", "05:00 PM - 06:20 PM"]
-                    ];
+  // store name map globally for modal
+  window._nameMap = nameMap;
+}
 
-                    const grid = {};
-                    days.forEach(day => {
-                        grid[day] = {};
-                        slots.forEach(s => {
-                            grid[day][s[0]] = { busy_students: new Set(), mentor: false };
-                        });
-                    });
+// ══════════════════════════════════════════════
+//  Modal
+// ══════════════════════════════════════════════
+function showDetails(cell) {
+  const title = cell.getAttribute('data-title');
+  const busy = (cell.getAttribute('data-busy') || '').split(',').filter(Boolean);
+  const free = (cell.getAttribute('data-free') || '').split(',').filter(Boolean);
+  const nm = window._nameMap || {};
 
-                    const mentorCourses = mentorCoursesInput.split(',').map(c => {
-                        const m = c.match(/([A-Za-z]{3,4})[^\w]*(\d{3})[^\w]*(\d{1,2})/);
-                        return m ? `${m[1].toUpperCase()}${m[2]}-${m[3].padStart(2, '0')}` : null;
-                    }).filter(Boolean);
+  document.getElementById('modalTitle').textContent = title;
+  const tbody = document.getElementById('modalBody');
+  tbody.innerHTML = '';
 
-                    mentorCourses.forEach(course => {
-                        if (scheduleMap[course]) {
-                            scheduleMap[course].forEach(session => {
-                                const day = session.day;
-                                const sessStart = session.startTime;
-                                const sessEnd = session.endTime;
-                                if (grid[day] && sessStart && sessEnd) {
-                                    slots.forEach(s => {
-                                        if (checkOverlap(s[0], s[1], sessStart, sessEnd)) {
-                                            grid[day][s[0]].mentor = true;
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
+  const busySorted = busy.map(id => ({ id, name: nm[id] || 'Unknown' })).sort((a,b) => a.id.localeCompare(b.id, undefined, {numeric:true}));
+  const freeSorted = free.map(id => ({ id, name: nm[id] || 'Unknown' })).sort((a,b) => a.id.localeCompare(b.id, undefined, {numeric:true}));
 
-                    studentData.forEach(student => {
-                        student.courses.forEach(course => {
-                            if (scheduleMap[course]) {
-                                scheduleMap[course].forEach(session => {
-                                    const day = session.day;
-                                    const sessStart = session.startTime;
-                                    const sessEnd = session.endTime;
-                                    if (grid[day] && sessStart && sessEnd) {
-                                        slots.forEach(s => {
-                                            if (checkOverlap(s[0], s[1], sessStart, sessEnd)) {
-                                                grid[day][s[0]].busy_students.add(student.id);
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    });
+  if (!busy.length && !free.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">No data</td></tr>';
+  } else {
+    busySorted.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${s.id}</td><td>${s.name}</td><td class="status-busy">Busy</td>`;
+      tbody.appendChild(tr);
+    });
+    if (busy.length && free.length) {
+      const div = document.createElement('tr');
+      div.className = 'divider-row';
+      div.innerHTML = '<td colspan="3"><hr class="divider-hr"></td>';
+      tbody.appendChild(div);
+    }
+    freeSorted.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${s.id}</td><td>${s.name}</td><td class="status-free">Free</td>`;
+      tbody.appendChild(tr);
+    });
+  }
 
-                    buildTable(days, slots, grid, allStudentIds, studentData.length, mentorNameInput);
-                };
-                reader.readAsText(csvInput);
+  document.getElementById('detailModal').classList.add('show');
+}
+function closeModal() { document.getElementById('detailModal').classList.remove('show'); }
+document.getElementById('detailModal').addEventListener('click', e => { if (e.target.id === 'detailModal') closeModal(); });
 
-            } catch (error) {
-                alert("Error fetching connect.json. Make sure the JSON_API_URL is correct and the repository is public.");
-                console.error(error);
-            } finally {
-                document.getElementById('loader').style.display = 'none';
-            }
-        }
-
-        function buildTable(days, slots, grid, allStudentIds, totalStudents, mentorName) {
-            let html = "<tr><th>Time / Day</th>";
-            days.forEach(day => html += `<th>${day}</th>`);
-            html += "</tr>";
-
-            slots.forEach(s => {
-                const startTime = s[0];
-                const timeLabel = s[2];
-                html += `<tr><td class='time-label'>${timeLabel}</td>`;
-                
-                days.forEach(day => {
-                    const cell = grid[day][startTime];
-                    const busyArray = Array.from(cell.busy_students);
-                    const freeArray = Array.from(allStudentIds).filter(x => !cell.busy_students.has(x));
-                    
-                    const available = totalStudents - busyArray.length;
-                    const ratioText = `(${available}/${totalStudents})`;
-                    const dataAttr = `data-busy='${busyArray.join(',')}' data-free='${freeArray.join(',')}' data-title='${day} ${timeLabel}'`;
-
-                    if (cell.mentor) {
-                        html += `<td class='mentor-block clickable' ${dataAttr} onclick='showDetails(this)'>${mentorName} <br><span style='font-size: 13px; opacity: 0.9;'>${ratioText}</span></td>`;
-                    } else if (totalStudents === 0) {
-                        html += `<td style='background-color: #f1f5f9; color: #94a3b8;' class='clickable' ${dataAttr} onclick='showDetails(this)'>No Data <br><span style='font-size: 13px;'>${ratioText}</span></td>`;
-                    } else {
-                        const ratio = available / totalStudents;
-                        const r = Math.floor(239 - (239 - 16) * ratio);
-                        const g = Math.floor(68 + (185 - 68) * ratio);
-                        const b = Math.floor(68 + (129 - 68) * ratio);
-                        const textColor = (ratio < 0.3 || ratio > 0.7) ? "#ffffff" : "#0f172a";
-                        
-                        html += `<td style='background-color: rgb(${r},${g},${b}); color: ${textColor};' class='clickable' ${dataAttr} onclick='showDetails(this)'>${ratioText}</td>`;
-                    }
-                });
-                html += "</tr>";
-            });
-
-            document.getElementById('routineTable').innerHTML = html;
-            document.getElementById('routineTable').style.display = 'table';
-            document.getElementById('legend').style.display = 'block';
-        }
-
-        function showDetails(cell) {
-            const title = cell.getAttribute('data-title');
-            const busy = cell.getAttribute('data-busy') ? cell.getAttribute('data-busy').split(',') : [];
-            const free = cell.getAttribute('data-free') ? cell.getAttribute('data-free').split(',') : [];
-
-            document.getElementById('modalTitle').innerText = 'Availability: ' + title;
-            const tbody = document.querySelector('#detailsTable tbody');
-            tbody.innerHTML = '';
-
-            const busyStudents = busy.filter(Boolean).map(id => ({ id, name: studentNames[id] || 'Unknown', status: 'Busy', cls: 'status-busy' }));
-            const freeStudents = free.filter(Boolean).map(id => ({ id, name: studentNames[id] || 'Unknown', status: 'Free', cls: 'status-free' }));
-
-            busyStudents.sort((a, b) => a.id.localeCompare(b.id, undefined, {numeric: true}));
-            freeStudents.sort((a, b) => a.id.localeCompare(b.id, undefined, {numeric: true}));
-
-            if (busyStudents.length === 0 && freeStudents.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No student data available</td></tr>';
-            } else {
-                busyStudents.forEach(s => {
-                    tbody.innerHTML += `<tr><td>${s.id}</td><td>${s.name}</td><td class="${s.cls}"><strong>${s.status}</strong></td></tr>`;
-                });
-                
-                if (busyStudents.length > 0 && freeStudents.length > 0) {
-                    tbody.innerHTML += '<tr class="divider"><td colspan="3" style="padding: 0;"><hr></td></tr>';
-                }
-                
-                freeStudents.forEach(s => {
-                    tbody.innerHTML += `<tr><td>${s.id}</td><td>${s.name}</td><td class="${s.cls}"><strong>${s.status}</strong></td></tr>`;
-                });
-            }
-
-            document.getElementById('myModal').style.display = 'block';
-        }
-
-        function closeModal() { document.getElementById('myModal').style.display = 'none'; }
-        window.onclick = function(event) {
-            const modal = document.getElementById('myModal');
-            if (event.target == modal) modal.style.display = "none";
-        }
-    </script>
+// ══════════════════════════════════════════════
+//  Helpers
+// ══════════════════════════════════════════════
+function showLoading(msg) {
+  document.getElementById('loadingText').textContent = msg || 'Processing...';
+  document.getElementById('loadingOverlay').style.display = 'flex';
+}
+function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+</script>
 </body>
 </html>
