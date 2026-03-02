@@ -27,8 +27,7 @@ You enter your own registered courses. Your FYAT members submit their courses th
 
 ```
 fyat-routine-mapper/
-├── fyat_app.html        # The entire app — HTML, CSS, and JS in one file
-├── connect.json         # Course schedule data (hosted on Supabase, not committed)
+├── fyat_app.html        # The entire app — HTML, CSS, and JS in one file 
 └── README.md
 ```
 
